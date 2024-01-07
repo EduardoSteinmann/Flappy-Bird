@@ -1,8 +1,8 @@
-/SDL2_include
-/lib
-/x64
-/.vs
-/.vscode
+*/SDL2_include
+*/lib
+*/x64
+*/.vs
+*/.vscode
 *.vcxproj
 *.aps
 *.vcxproj.user
