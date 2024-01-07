@@ -1,0 +1,277 @@
+#include "SDL.h"
+#include "SDL_image.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 800
+
+#define GRAVITY 9.81
+
+#define TOP_PIPES_UPPER_BOUND 500
+#define TOP_PIPES_LOWER_BOUND 250
+
+#define DELAY 10
+#define DELAY_IN_SECONDS ((double)DELAY / 1000)
+
+#define METER_CONVERSION 7.5
+
+#define PIPE_WIDTH 50
+#define PIPES_OFFSET 150
+#define PIPES_POSITION_CHANGE_PER_FRAME 1
+#define NUM_OF_PIPES 8
+
+#define FLAPPY_WIDTH 49
+#define FLAPPY_HEIGHT 27
+
+#undef main
+
+struct GameObject
+{
+    SDL_Rect rect
+    SDL_Surface* img
+}
+
+fn display_game_object(SDL_Renderer* const renderer, const SDL_RendererFlip flip, const GameObject* const game_obj) const int
+{
+    texture := SDL_CreateTextureFromSurface(renderer, game_obj->img)
+
+    if !texture
+    {
+        return -1
+    }
+
+    SDL_RenderCopyEx(renderer, texture, NULL, &game_obj->rect, 180, NULL, flip)
+
+    SDL_DestroyTexture(texture)
+
+    return 0
+}
+
+fn display_pipes(SDL_Renderer* const renderer, GameObject pipes[NUM_OF_PIPES]) const int
+{
+    for size_t i = 0; i < NUM_OF_PIPES; i++
+    {
+        flip mut := SDL_FLIP_NONE
+
+        if i % 2 == 0
+        {
+            flip = SDL_FLIP_VERTICAL
+        }
+
+        err := display_game_object(renderer, flip, &pipes[i])
+
+        if err
+        {
+            return err
+        }
+    }
+
+    return 0
+}
+
+fn init_pipes(GameObject pipes[NUM_OF_PIPES]) const int
+{
+    x_add mut := 0
+    for size_t i = 0; i < NUM_OF_PIPES; i++
+    {
+        pipes[i].img = IMG_Load("assets/pipe.png")
+
+        if !pipes[i].img
+        {
+            return -1
+        }
+
+        x_add += PIPES_OFFSET
+        pipes[i].rect.w = PIPE_WIDTH
+        pipes[i].rect.x += x_add
+
+        //Top Pipes
+        if i % 2 == 0
+        {
+            pipe_height := rand() % (TOP_PIPES_UPPER_BOUND - TOP_PIPES_LOWER_BOUND + 1) + TOP_PIPES_LOWER_BOUND
+            pipes[i].rect.h = pipe_height
+            pipes[i].rect.y = 0
+        }
+        //Bottom Pipes
+        else
+        {
+            pipes[i].rect.x = pipes[i - 1].rect.x
+            pipes[i].rect.y = PIPES_OFFSET + pipes[i - 1].rect.h
+            pipes[i].rect.h = SCREEN_HEIGHT - pipes[i].rect.y
+        }
+    }
+
+    return 0
+}
+
+fn deinit_pipes(GameObject pipes[NUM_OF_PIPES]) const int
+{
+    for size_t i = 0; i < NUM_OF_PIPES; i++
+    {
+        SDL_FreeSurface(pipes[i].img)
+        pipes[i].rect = (SDL_Rect){ 0 }
+    }
+}
+
+fn update_pipes(GameObject pipes[NUM_OF_PIPES]) void
+{
+    for size_t i = 0; i < NUM_OF_PIPES; i++
+    {
+        pipes[i].rect.x -= PIPES_POSITION_CHANGE_PER_FRAME
+        if pipes[i].rect.x + PIPE_WIDTH <= 0
+        {
+            pipes[i].rect.x = (PIPES_OFFSET + PIPE_WIDTH) * 5.5
+            //Top Pipes
+            if i % 2 == 0
+            {
+                pipe_height := rand() % (TOP_PIPES_UPPER_BOUND - TOP_PIPES_LOWER_BOUND + 1) + TOP_PIPES_LOWER_BOUND
+                pipes[i].rect.h = pipe_height
+                pipes[i].rect.y = 0
+            }
+            //Bottom Pipes
+            else
+            {
+                pipes[i].rect.x = pipes[i - 1].rect.x
+                pipes[i].rect.y = PIPES_OFFSET + pipes[i - 1].rect.h
+                pipes[i].rect.h = SCREEN_HEIGHT - pipes[i].rect.y
+            }
+        }
+    }
+}
+
+fn collide_with_pipes(const GameObject* const flappy, GameObject pipes[NUM_OF_PIPES]) const bool
+{
+    for size_t i = 0; i < NUM_OF_PIPES; i++
+    {
+        if flappy->rect.x + FLAPPY_WIDTH >= pipes[i].rect.x && flappy->rect.x + FLAPPY_WIDTH <= pipes[i].rect.x + PIPE_WIDTH && flappy->rect.y + FLAPPY_HEIGHT >= pipes[i].rect.y && flappy->rect.y + FLAPPY_HEIGHT <= pipes[i].rect.y + pipes[i].rect.h
+        {
+            return true
+        } 
+    }
+    return false
+}
+
+fn not_in_bounds(const GameObject* const flappy) const bool
+{
+    return flappy->rect.y + FLAPPY_HEIGHT <= 0 || flappy->rect.y >= SCREEN_HEIGHT
+}
+
+fn event_loop() const int
+{ 
+    err mut := 0
+
+    if SDL_Init(SDL_INIT_VIDEO)
+    {
+        return -1
+    }
+
+    window mut := SDL_CreateWindow("Flappy Bird", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0)
+
+    if !window
+    {
+        return -1
+    }
+
+    renderer mut := SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE)
+    
+    event mut := (SDL_Event){ 0 }
+ 
+    background := (GameObject){ .rect = { .x = 0, .y = 0, .w = SCREEN_WIDTH, .h = SCREEN_HEIGHT }, .img = IMG_Load("assets/background.png") }
+
+    GameObject pipes[NUM_OF_PIPES] = { 0 }
+
+    flappy mut := (GameObject){ .rect = { .x = 0, .y = 400 - FLAPPY_HEIGHT, .w = FLAPPY_WIDTH, .h = FLAPPY_HEIGHT }, .img = IMG_Load("assets/flappy.png") }
+
+    err = init_pipes(pipes)
+
+    if !flappy.img || !background.img
+    {
+        return -1
+    }
+
+    err = display_game_object(renderer, SDL_FLIP_VERTICAL, &background)
+    err = display_pipes(renderer, pipes)
+    err = display_game_object(renderer, SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL, &flappy)
+
+    if err
+    {
+        return err
+    }
+
+    SDL_RenderPresent(renderer)
+    
+    delta_time mut := 0.0
+    vertical_velocity mut := 0.0
+
+    while true
+    {
+        SDL_PollEvent(&event)
+
+        update_pipes(pipes)
+
+        err = display_game_object(renderer, SDL_FLIP_VERTICAL, &background)
+
+        err = display_pipes(renderer, pipes)
+
+        flappy.rect.y += (vertical_velocity * delta_time + 0.5 * GRAVITY * (delta_time * delta_time)) / METER_CONVERSION
+
+        if event.type == SDL_QUIT
+        {
+            break
+        }
+        else if event.type == SDL_KEYDOWN
+        {
+            //handle jump
+            if event.key.keysym.sym == SDLK_SPACE
+            {
+                //original jump decremented by 20
+                flappy.rect.y -= vertical_velocity * delta_time 
+                delta_time = 0
+            }
+        }
+
+        err = display_game_object(renderer, SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL, &flappy)
+
+        if collide_with_pipes(&flappy, pipes) || not_in_bounds(&flappy)
+        {
+            break
+        }
+
+        SDL_RenderPresent(renderer)
+
+        if err
+        {
+            return err
+        }
+
+        delta_time += DELAY_IN_SECONDS
+        vertical_velocity += GRAVITY * delta_time
+
+        SDL_Delay(DELAY)
+    }
+
+    deinit_pipes(pipes)
+    SDL_FreeSurface(flappy.img)
+    SDL_FreeSurface(background.img)
+
+    SDL_DestroyRenderer(renderer)
+    SDL_DestroyWindow(window)
+
+    return 0
+}
+
+fn main() int
+{
+    err := event_loop()
+    
+    if err
+    {
+        fprintf(stderr, "Something went wrong: %d", err)
+        return -1
+    }
+
+    SDL_Quit()
+
+    return 0
+}

@@ -1,0 +1,12 @@
+/SDL2_include
+/lib
+/x64
+/.vs
+/.vscode
+*.vcxproj
+*.aps
+*.vcxproj.user
+*vcxproj.filters
+*.dll
+/.exe
+Makefile
