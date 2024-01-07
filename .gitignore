@@ -1,8 +1,8 @@
-*/SDL2_include
-*/lib
-*/x64
-*/.vs
-*/.vscode
+flappy_bird/SDL2_include
+flappy_bird/lib
+flappy_bird/x64
+flappy_bird/.vs
+flappy_bird/.vscode
 *.vcxproj
 *.aps
 *.vcxproj.user
