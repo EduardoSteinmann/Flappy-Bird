@@ -8,5 +8,5 @@
 *.vcxproj.user
 *vcxproj.filters
 *.dll
-*.exe
+/.exe
 Makefile
