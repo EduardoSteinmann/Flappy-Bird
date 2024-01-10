@@ -145,10 +145,16 @@ bool const    collide_with_pipes(const GameObject* const flappy, GameObject pipe
 {
     for ( size_t i = 0; i < NUM_OF_PIPES; i++ )
     {
-        if ( flappy->rect.x + FLAPPY_WIDTH >= pipes[i].rect.x && flappy->rect.x + FLAPPY_WIDTH <= pipes[i].rect.x + PIPE_WIDTH && flappy->rect.y + FLAPPY_HEIGHT >= pipes[i].rect.y && flappy->rect.y + FLAPPY_HEIGHT <= pipes[i].rect.y + pipes[i].rect.h )
+        for ( int x = flappy->rect.x; x <= flappy->rect.x + FLAPPY_WIDTH; x++ )
         {
-            return true;
-        } 
+            for ( int y = flappy->rect.y; y <= flappy->rect.y + FLAPPY_HEIGHT; y++ )
+            {
+                if ( x >= pipes[i].rect.x && x <= pipes[i].rect.x + PIPE_WIDTH && y >= pipes[i].rect.y && y <= pipes[i].rect.y + pipes[i].rect.h )
+                {
+                    return true;
+                }
+            }
+        }
     }
     return false;
 }
@@ -202,8 +208,7 @@ int const    event_loop()
 
     SDL_RenderPresent(renderer);
 
-    auto delta_time      = 0.0;
-    auto vertical_velocity      = 0.0;
+    auto x_parabola_val      = 0.0;
 
     while ( true )
     {
@@ -215,7 +220,7 @@ int const    event_loop()
 
         err = display_pipes(renderer, pipes);
 
-        flappy.rect.y += (vertical_velocity * delta_time + 0.5 * GRAVITY * (delta_time * delta_time)) / METER_CONVERSION;
+        flappy.rect.y += (int)(((A_TERM * x_parabola_val * x_parabola_val) + B_TERM * x_parabola_val) / REDUCTION_TERM) - JUMP_OFFSET_TERM;
 
         if ( event.type == SDL_QUIT )
         {
@@ -226,8 +231,7 @@ int const    event_loop()
             //handle jump;
             if ( event.key.keysym.sym == SDLK_SPACE )
             {
-                flappy.rect.y -= vertical_velocity * delta_time;
-                delta_time = 0;
+                x_parabola_val = 0;
             }
         }
 
@@ -245,8 +249,7 @@ int const    event_loop()
             return err;
         }
 
-        delta_time += DELAY_IN_SECONDS;
-        vertical_velocity += GRAVITY * delta_time;
+        x_parabola_val++;
 
         SDL_Delay(DELAY);
     }

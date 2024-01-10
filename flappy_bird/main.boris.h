@@ -6,12 +6,13 @@
 #include <stdlib.h>
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
-#define GRAVITY 9.81
+#define B_TERM 200
+#define A_TERM 1
+#define REDUCTION_TERM 180
+#define JUMP_OFFSET_TERM 10
 #define TOP_PIPES_UPPER_BOUND 500
 #define TOP_PIPES_LOWER_BOUND 250
-#define DELAY 10
-#define DELAY_IN_SECONDS ((double)DELAY / 1000)
-#define METER_CONVERSION 7.5
+#define DELAY 5
 #define PIPE_WIDTH 50
 #define PIPES_OFFSET 150
 #define PIPES_POSITION_CHANGE_PER_FRAME 1

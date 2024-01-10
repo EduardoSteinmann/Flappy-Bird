@@ -6,15 +6,15 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
 
-#define GRAVITY 9.81
+#define B_TERM 200
+#define A_TERM 1
+#define REDUCTION_TERM 180
+#define JUMP_OFFSET_TERM 10
 
 #define TOP_PIPES_UPPER_BOUND 500
 #define TOP_PIPES_LOWER_BOUND 250
 
-#define DELAY 10
-#define DELAY_IN_SECONDS ((double)DELAY / 1000)
-
-#define METER_CONVERSION 7.5
+#define DELAY 5
 
 #define PIPE_WIDTH 50
 #define PIPES_OFFSET 150
@@ -144,10 +144,16 @@ fn collide_with_pipes(const GameObject* const flappy, GameObject pipes[NUM_OF_PI
 {
     for size_t i = 0; i < NUM_OF_PIPES; i++
     {
-        if flappy->rect.x + FLAPPY_WIDTH >= pipes[i].rect.x && flappy->rect.x + FLAPPY_WIDTH <= pipes[i].rect.x + PIPE_WIDTH && flappy->rect.y + FLAPPY_HEIGHT >= pipes[i].rect.y && flappy->rect.y + FLAPPY_HEIGHT <= pipes[i].rect.y + pipes[i].rect.h
+        for int x = flappy->rect.x; x <= flappy->rect.x + FLAPPY_WIDTH; x++
         {
-            return true
-        } 
+            for int y = flappy->rect.y; y <= flappy->rect.y + FLAPPY_HEIGHT; y++
+            {
+                if x >= pipes[i].rect.x && x <= pipes[i].rect.x + PIPE_WIDTH && y >= pipes[i].rect.y && y <= pipes[i].rect.y + pipes[i].rect.h
+                {
+                    return true
+                }
+            }
+        }
     }
     return false
 }
@@ -201,8 +207,7 @@ fn event_loop() const int
 
     SDL_RenderPresent(renderer)
     
-    delta_time mut := 0.0
-    vertical_velocity mut := 0.0
+    x_parabola_val mut := 0.0
 
     while true
     {
@@ -214,7 +219,7 @@ fn event_loop() const int
 
         err = display_pipes(renderer, pipes)
 
-        flappy.rect.y += (vertical_velocity * delta_time + 0.5 * GRAVITY * (delta_time * delta_time)) / METER_CONVERSION
+        flappy.rect.y += (int)(((A_TERM * x_parabola_val * x_parabola_val) + B_TERM * x_parabola_val) / REDUCTION_TERM) - JUMP_OFFSET_TERM
 
         if event.type == SDL_QUIT
         {
@@ -225,9 +230,7 @@ fn event_loop() const int
             //handle jump
             if event.key.keysym.sym == SDLK_SPACE
             {
-                //original jump decremented by 20
-                flappy.rect.y -= vertical_velocity * delta_time 
-                delta_time = 0
+                x_parabola_val = 0
             }
         }
 
@@ -245,8 +248,7 @@ fn event_loop() const int
             return err
         }
 
-        delta_time += DELAY_IN_SECONDS
-        vertical_velocity += GRAVITY * delta_time
+        x_parabola_val++
 
         SDL_Delay(DELAY)
     }
