@@ -6,9 +6,9 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 800
 
-#define B_TERM 200
+#define B_TERM 120
 #define A_TERM 1
-#define REDUCTION_TERM 180
+#define REDUCTION_TERM 200
 #define JUMP_OFFSET_TERM 10
 
 #define TOP_PIPES_UPPER_BOUND 500
